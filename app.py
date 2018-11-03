@@ -43,13 +43,6 @@ def get_user():
   result = users_schema.dump(all_users)
   return jsonify(result.data)
 
-#@app.route("/playmeamelody", methods=["GET"])
-#def get_currently_playing():
-#  playlist = {}
-#  all_users = User.query.all()
-#  for user in all_users:
-#    user.oauth
-
 @app.route("/authorizeme", methods=["GET", "POST"])
 def get_authorization_token():
   # if request.method == 'GET':
@@ -96,9 +89,20 @@ def _get_currently_playing(access_token):
   elif response.status_code == 401:
       raise SpotifyAuthTokenError("expired access token")
 
+
+def _get_user_info(access_token):
+  headers = { 'Authorization': 'Bearer ' + access_token }
+  response = requests.get('https://api.spotify.com/v1/', headers=headers)
+  if response:
+      r = json.loads(response.content)
+      app.logger.error(r)
+      return(r)
+
+
 def _add_new_minion(access_token, refresh_token):
-  r = _get_currently_playing(access_token)
-  username = r['context']['uri']
+  r = _get_user_info(access_token)
+  app.logger.error(r)
+  username = ['id']
   u = User.query.filter_by(spotify_id=username).first()
   if (u is None):
     new_minion = User(spotify_id = username.split(":")[2], oauth = access_token)
@@ -106,7 +110,8 @@ def _add_new_minion(access_token, refresh_token):
   else:
     u.access_token = access_token
   db.session.commit()
-  app.logger.info(u.spotify_id + " updated successfully")
+  app.logger.error(u.spotify_id + " updated successfully")
+  return(r)
 
 def _renew_access_token(user):
   headers = _make_authorization_headers(__client_id__, __client_secret__)
@@ -118,9 +123,10 @@ def _renew_access_token(user):
         headers=headers).content)
   user_tok = resp['access_token']
   refresh_token = resp['refresh_token']
-  u.access_token = user_tok
-  u.refresh_tok = refresh_token;
+  user.access_token = user_tok
+  user.refresh_tok = refresh_token;
   db.session.commit()
+  return (user)
 
 if __name__ == "__main__":
   app.run(debug=True, host="0.0.0.0", port="8888")
