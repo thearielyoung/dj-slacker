@@ -49,7 +49,7 @@ def get_authorization_token():
     payload = {
       'client_id': __client_id__,
       'response_type': 'code',
-      'scope': 'user-read-currently-playing user-read-recently-played',
+      'scope': 'user-read-currently-playing user-read-recently-played user-read-private',
       'redirect_uri': __pub_host__,
     }
     header_auth = _make_authorization_headers(__client_id__, __client_secret__)
@@ -92,7 +92,8 @@ def _get_currently_playing(access_token):
 
 def _get_user_info(access_token):
   headers = { 'Authorization': 'Bearer ' + access_token }
-  response = requests.get('https://api.spotify.com/v1/', headers=headers)
+  response = requests.get('https://api.spotify.com/v1/me', headers=headers)
+  app.logger.error(response.status_code)
   if response:
       r = json.loads(response.content)
       app.logger.error(r)
@@ -100,7 +101,6 @@ def _get_user_info(access_token):
 
 
 def _add_new_minion(access_token, refresh_token):
-  app.logger.error("AT: " + access_token)
   r = _get_user_info(access_token)
   app.logger.error(r)
   username = ['id']
