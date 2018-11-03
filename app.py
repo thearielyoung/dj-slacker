@@ -26,6 +26,8 @@ class User(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   spotify_id = db.Column(db.String(64), unique=True)
   oauth = db.Column(db.String(256), unique=True)
+  refresh_tok = db.Column(db.String(256), unique=True)
+
 
 class UserSchema(ma.Schema):
     class Meta:
@@ -79,13 +81,20 @@ def get_response_from_spotty():
 @app.route("/playmeamelody", methods=["GET"])
 def get_tunes():
   for user in User.query.all():
-    return(jsonify(_get_currently_playing(user.oauth)))
+      try:
+          return(jsonify(_get_currently_playing(user.oauth)))
+      except SpotifyAuthTokenError:
+          _renew_access_token(user)
+          _get_currently_playing(user.access_token)
 
 def _get_currently_playing(access_token):
   headers = { 'Authorization': 'Bearer ' + access_token }
-  r = json.loads(requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers).content)
-  return(r)
-
+  response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
+  if response:
+      r = json.loads(response.content)
+      return(r)
+  elif response.status_code == 401:
+      raise SpotifyAuthTokenError("expired access token")
 
 def _add_new_minion(access_token, refresh_token):
   r = _get_currently_playing(access_token)
@@ -94,11 +103,30 @@ def _add_new_minion(access_token, refresh_token):
   if (u is None):
     new_minion = User(spotify_id = username.split(":")[2], oauth = access_token)
     db.session.add(new_minion)
-    db.session.commit()
   else:
     u.access_token = access_token
-    db.session.commit()
-  return(jsonify("Updated user successfully"))
+  db.session.commit()
+  app.logger.info(u.spotify_id + " updated successfully")
+
+def _renew_access_token(user):
+  headers = _make_authorization_headers(__client_id__, __client_secret__)
+  resp = json.loads(requests.post('https://accounts.spotify.com/api/token',
+        data = {
+          "redirect_uri": __pub_host__,
+          "grant_type": "authorization_code",
+          "code": user.refresh_tok },
+        headers=headers).content)
+  user_tok = resp['access_token']
+  refresh_token = resp['refresh_token']
+  u.access_token = user_tok
+  u.refresh_tok = refresh_token;
+  db.session.commit()
 
 if __name__ == "__main__":
   app.run(debug=True, host="0.0.0.0", port="8888")
+
+class SpotifyAuthTokenError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
