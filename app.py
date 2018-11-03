@@ -30,7 +30,7 @@ class User(db.Model):
 class UserSchema(ma.Schema):
     class Meta:
         # Fields to expose
-        fields = ('slack_handle','spotify_id', 'id')
+        fields = ('spotify_id', 'id')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
