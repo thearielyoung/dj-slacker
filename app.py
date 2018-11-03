@@ -23,8 +23,8 @@ def _make_authorization_headers(client_id, client_secret):
     return {'Authorization': 'Basic %s' % auth_header.decode('ascii')}
 
 class User(db.Model):
-  id = db.Column(db.Integer, primary_key=True)
-  spotify_id = db.Column(db.String(64), unique=True)
+  id = db.Column(db.Integer, unique=True)
+  spotify_id = db.Column(db.String(64), primary_key=True)
   oauth = db.Column(db.String(256), unique=True)
   refresh_tok = db.Column(db.String(256), unique=True)
 
