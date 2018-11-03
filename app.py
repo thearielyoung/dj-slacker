@@ -96,7 +96,6 @@ def _get_user_info(access_token):
   app.logger.error(response.status_code)
   if response:
       r = json.loads(response.content)
-      app.logger.error(r)
       return(r)
 
 
