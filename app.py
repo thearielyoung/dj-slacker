@@ -66,10 +66,10 @@ def get_response_from_spotty():
           "grant_type": "authorization_code",
           "code": code },
         headers=headers).content)
-  app.logger.info(resp.keys())
-  user_tok = resp['access_token']
+  app.logger.error(resp.keys())
+  access_token = resp['access_token']
   refresh_tok = resp['refresh_token']
-  return(_add_new_minion(user_tok, refresh_tok)    )
+  return(_add_new_minion(access_token, refresh_tok))
 
 @app.route("/playmeamelody", methods=["GET"])
 def get_tunes():
@@ -100,6 +100,7 @@ def _get_user_info(access_token):
 
 
 def _add_new_minion(access_token, refresh_token):
+  app.logger.error("AT: " + access_token)
   r = _get_user_info(access_token)
   app.logger.error(r)
   username = ['id']
