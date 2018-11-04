@@ -103,11 +103,10 @@ def _add_new_minion(access_token, refresh_token):
   r = _get_user_info(access_token)
   username = r['id']
   app.logger.error(username)
-
   u = User.query.filter_by(spotify_id=username).first()
   if (u is None):
     app.logger.error(username + " at: " + access_token)
-    u = User(spotify_id = username.split(":")[2], oauth = access_token)
+    u = User(spotify_id=username, oauth=access_token, refresh_tok=refresh_token)
   else:
     u.access_token = access_token
   app.logger.error(username + " at: " + access_token)
