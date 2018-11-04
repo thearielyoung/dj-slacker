@@ -73,12 +73,20 @@ def get_response_from_spotty():
 
 @app.route("/playmeamelody", methods=["GET"])
 def get_tunes():
+  songs = []
   for user in User.query.all():
       try:
-          return(jsonify(_get_currently_playing(user.oauth)))
+          track = _get_currently_playing(user.oauth)['item']
+          track_info = ''
+          for i in track['artists']:
+              track_info += "%s " %(i['name'])
+          track_info += ": %s" %(track['name'])
+          songs.append(track_info)
+        app.logger.error(songs)
       except SpotifyAuthTokenError:
           _renew_access_token(user)
           _get_currently_playing(user.access_token)
+  return jsonify(songs)
 
 def _get_currently_playing(access_token):
   headers = { 'Authorization': 'Bearer ' + access_token }
