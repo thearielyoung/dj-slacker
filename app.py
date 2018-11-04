@@ -3,6 +3,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from urllib import parse
+import spotipy
+import spotipy.util as util
+import spotipy.oauth2 as spotipy_auth
 import os, base64, requests, six, json
 import six.moves.urllib.parse as urllibparse
 
@@ -15,7 +18,12 @@ __prefix__ = 'https://api.spotify.com/v1/'
 __client_id__ = os.environ["CLIENT_ID"]
 __client_secret__ = os.environ["CLIENT_SECRET"]
 __pub_host__='https://dj-slacker.herokuapp.com/'
-
+__spotify_auth__ = spotipy_auth.SpotifyOAuth(
+        client_id = __client_id__,
+        client_secret = __client_secret__,
+        redirect_uri = __pub_host__,
+        scope =  'user-read-currently-playing user-read-recently-played user-read-private'
+    )
 spotify_auth_endpoint = 'https://accounts.spotify.com/authorize/'
 
 def _make_authorization_headers():
@@ -43,15 +51,13 @@ def get_user():
 
 @app.route("/authorizeme", methods=["GET", "POST"])
 def get_authorization_token():
-    payload = {
-      'client_id': __client_id__,
-      'response_type': 'code',
-      'scope': 'user-read-currently-playing user-read-recently-played user-read-private',
-      'redirect_uri': __pub_host__,
-    }
-    header_auth = _make_authorization_headers()
-    r = requests.get(url = spotify_auth_endpoint, params = payload, headers = header_auth)
-    return("Authorize here: " + r.url)
+    spotify_auth = spotipy_auth.SpotifyOAuth(
+        client_id = __client_id__,
+        client_secret = __client_secret__,
+        redirect_uri = __pub_host__,
+        scope =  'user-read-currently-playing user-read-recently-played user-read-private'
+    )
+    return("Authorize here: " + spotify_auth.get_authorize_url())
 
 @app.route("/", methods=["GET"])
 def get_response_from_spotty():
@@ -84,18 +90,16 @@ def get_tunes():
                 songs.append("%s -> %s" %(user.spotify_id, track_info))
         except SpotifyAuthTokenError:
             _renew_access_token(user)
-            _get_currently_playing(user.access_token)
-    if empty(songs):
+            _get_currently_playing(user.oauth)
+    if not songs:
         return jsonify({'text': "Its quiet...too quiet...get some music started g"})
     return jsonify({'text': '\n'.join(songs)})
 
 def _get_currently_playing(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
     response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
-    app.logger.error(response.status_code)
     if response.status_code == 200:
         r = json.loads(response.content)
-
         return(r)
     elif response.status_code == 401:
         raise SpotifyAuthTokenError("expired access token")
@@ -111,33 +115,38 @@ def _get_user_info(access_token):
 
 def _add_new_minion(access_token, refresh_token):
     r = _get_user_info(access_token)
-    username = r['id']
-    u = User.query.filter_by(spotify_id=username).first()
-    if (u is None):
-        u = User(spotify_id=username, oauth=access_token, refresh_tok=refresh_token)
-    else:
-        u.access_token = access_token
-    db.session.add(u)
-    db.session.commit()
-    return(r)
+    if r:
+        username = r['id']
+        name = r['display_name']
+        u = User.query.filter_by(spotify_id=username).first()
+        if (u is None):
+            u = User(spotify_id=username, oauth=access_token, refresh_tok=refresh_token)
+        else:
+            u.access_token = access_token
+        db.session.add(u)
+        db.session.commit()
+        return(r)
 
 def _renew_access_token(user):
-    app.logger.error("renewing the person")
-    headers = _make_authorization_headers()
-    resp = json.loads(requests.post('https://accounts.spotify.com/api/token',
-        data = {
-          "redirect_uri": __pub_host__,
-          "grant_type": "authorization_code",
-          "code": user.refresh_tok },
-        headers=headers).content)
-    user_tok = resp['access_token']
-    user.access_token = user_tok
+    t = __spotify_auth__.refresh_access_token(refresh_token=user.refresh_tok)
+    user_tok = t['access_token']
+    ref_tok = t['refresh_token']
+    user.oauth = user_tok
+    user.refresh_tok = ref_tok
     db.session.add(user)
     db.session.commit()
     return (user)
 
 if __name__ == "__main__":
-  app.run(debug=True, host="0.0.0.0", port="8888")
+    spotify_auth = spotipy_auth.SpotifyOAuth(
+        client_id = __client_id__,
+        client_secret = __client_secret__,
+        redirect_uri = __pub_host__,
+        scope =  'user-read-currently-playing user-read-recently-played user-read-private'
+    )
+    app.logger.setLevel(logging.DEBUG)
+    app.run(debug=True, host="0.0.0.0", port="8888")
+
 
 class SpotifyAuthTokenError(Exception):
     def __init__(self, value):
