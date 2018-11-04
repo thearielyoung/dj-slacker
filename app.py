@@ -78,9 +78,10 @@ def get_tunes():
             track = _get_currently_playing(user.oauth)['item']
             track_info = ''
             for i in track['artists']:
-                track_info += "%s " %(i['name'])
-                track_info += ": %s" %(track['name'])
-                songs.append("%s -> %s" %(user.spotify_id, track_info))
+                track_info += "%s, " %(i['name'])
+            track_info = track_info[:-2]    
+            track_info += ": %s" %(track['name'])
+            songs.append("%s -> %s" %(user.spotify_id, track_info))
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
