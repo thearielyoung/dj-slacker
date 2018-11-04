@@ -70,7 +70,7 @@ def get_response_from_spotty():
     if _add_new_minion(access_token, refresh_tok):
         return(jsonify("success!"))
 
-@app.route("/playmeamelody", methods=["GET"])
+@app.route("/playmeamelody", methods=["GET", "POST"])
 def get_tunes():
     songs = []
     for user in User.query.all():
@@ -87,7 +87,7 @@ def get_tunes():
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
-    return jsonify(songs)
+    return jsonify({'text': songs})
 
 def _get_currently_playing(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
