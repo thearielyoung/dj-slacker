@@ -23,8 +23,8 @@ def _make_authorization_headers(client_id, client_secret):
     return {'Authorization': 'Basic %s' % auth_header.decode('ascii')}
 
 class User(db.Model):
-  id = db.Column(db.Integer, unique=True)
-  spotify_id = db.Column(db.String(64), primary_key=True)
+  id = db.Column(db.Integer, unique=True, primary_key=True)
+  spotify_id = db.Column(db.String(64), unique=True)
   oauth = db.Column(db.String(256), unique=True)
   refresh_tok = db.Column(db.String(256), unique=True)
 
@@ -66,7 +66,6 @@ def get_response_from_spotty():
           "grant_type": "authorization_code",
           "code": code },
         headers=headers).content)
-  app.logger.error(resp.keys())
   access_token = resp['access_token']
   refresh_tok = resp['refresh_token']
   if _add_new_minion(access_token, refresh_tok):
@@ -102,7 +101,6 @@ def _get_user_info(access_token):
 
 def _add_new_minion(access_token, refresh_token):
   r = _get_user_info(access_token)
-  username = r['id']
   app.logger.error(username)
   u = User.query.filter_by(spotify_id=username).first()
   if (u is None):
