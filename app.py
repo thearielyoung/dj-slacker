@@ -69,7 +69,8 @@ def get_response_from_spotty():
   app.logger.error(resp.keys())
   access_token = resp['access_token']
   refresh_tok = resp['refresh_token']
-  return(_add_new_minion(access_token, refresh_tok))
+  if _add_new_minion(access_token, refresh_tok):
+      return(jsonify("success!"))
 
 @app.route("/playmeamelody", methods=["GET"])
 def get_tunes():
