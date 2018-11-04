@@ -87,7 +87,8 @@ def get_tunes():
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
-    return jsonify({'text': songs})
+
+    return jsonify({'text': '\n'.join(songs)})
 
 def _get_currently_playing(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
