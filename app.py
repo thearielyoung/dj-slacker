@@ -75,13 +75,15 @@ def get_tunes():
     songs = []
     for user in User.query.all():
         try:
-            track = _get_currently_playing(user.oauth)['item']
-            track_info = ''
-            for i in track['artists']:
-                track_info += "%s, " %(i['name'])
-            track_info = track_info[:-2]    
-            track_info += ": %s" %(track['name'])
-            songs.append("%s -> %s" %(user.spotify_id, track_info))
+            track = _get_currently_playing(user.oauth)
+            if track:
+                track = track['item']
+                track_info = ''
+                for i in track['artists']:
+                    track_info += "%s, " %(i['name'])
+                track_info = track_info[:-2]
+                track_info += ": %s" %(track['name'])
+                songs.append("%s -> %s" %(user.spotify_id, track_info))
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
@@ -90,7 +92,8 @@ def get_tunes():
 def _get_currently_playing(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
     response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
-    if response:
+    app.logger.error(response.status_code)
+    if response.status_code == 200:
         r = json.loads(response.content)
 
         return(r)
@@ -101,7 +104,6 @@ def _get_currently_playing(access_token):
 def _get_user_info(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
     response = requests.get('https://api.spotify.com/v1/me', headers=headers)
-    app.logger.error(response.status_code)
     if response:
         r = json.loads(response.content)
         return(r)
