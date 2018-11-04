@@ -101,8 +101,9 @@ def _get_user_info(access_token):
 
 def _add_new_minion(access_token, refresh_token):
   r = _get_user_info(access_token)
-  app.logger.error(r)
-  username = ['id']
+  username = r['id']
+  app.logger.error(username)
+
   u = User.query.filter_by(spotify_id=username).first()
   if (u is None):
     app.logger.error(username + " at: " + access_token)
