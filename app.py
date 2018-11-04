@@ -18,8 +18,8 @@ __pub_host__='https://dj-slacker.herokuapp.com/'
 
 spotify_auth_endpoint = 'https://accounts.spotify.com/authorize/'
 
-def _make_authorization_headers(client_id, client_secret):
-    auth_header = base64.b64encode(six.text_type(client_id + ':' + client_secret).encode('ascii'))
+def _make_authorization_headers():
+    auth_header = base64.b64encode(six.text_type(__client_id__ + ':' + __client_secret__).encode('ascii'))
     return {'Authorization': 'Basic %s' % auth_header.decode('ascii')}
 
 class User(db.Model):
@@ -30,7 +30,6 @@ class User(db.Model):
 
 class UserSchema(ma.Schema):
     class Meta:
-    # Fields to expose
         fields = ('spotify_id', 'id')
 
 user_schema = UserSchema()
@@ -44,21 +43,20 @@ def get_user():
 
 @app.route("/authorizeme", methods=["GET", "POST"])
 def get_authorization_token():
-    # if request.method == 'GET':
     payload = {
       'client_id': __client_id__,
       'response_type': 'code',
       'scope': 'user-read-currently-playing user-read-recently-played user-read-private',
       'redirect_uri': __pub_host__,
     }
-    header_auth = _make_authorization_headers(__client_id__, __client_secret__)
+    header_auth = _make_authorization_headers()
     r = requests.get(url = spotify_auth_endpoint, params = payload, headers = header_auth)
     return("Authorize here: " + r.url)
 
 @app.route("/", methods=["GET"])
 def get_response_from_spotty():
     code = request.values['code']
-    headers = _make_authorization_headers(__client_id__, __client_secret__)
+    headers = _make_authorization_headers()
     resp = json.loads(requests.post('https://accounts.spotify.com/api/token',
         data = {
           "redirect_uri": __pub_host__,
@@ -87,7 +85,8 @@ def get_tunes():
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
-
+    if empty(songs):
+        return jsonify({'text': "Its quiet...too quiet...get some music started g"})
     return jsonify({'text': '\n'.join(songs)})
 
 def _get_currently_playing(access_token):
@@ -124,7 +123,7 @@ def _add_new_minion(access_token, refresh_token):
 
 def _renew_access_token(user):
     app.logger.error("renewing the person")
-    headers = _make_authorization_headers(__client_id__, __client_secret__)
+    headers = _make_authorization_headers()
     resp = json.loads(requests.post('https://accounts.spotify.com/api/token',
         data = {
           "redirect_uri": __pub_host__,
