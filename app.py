@@ -105,10 +105,12 @@ def _add_new_minion(access_token, refresh_token):
   username = ['id']
   u = User.query.filter_by(spotify_id=username).first()
   if (u is None):
-    new_minion = User(spotify_id = username.split(":")[2], oauth = access_token)
-    db.session.add(new_minion)
+    app.logger.error(username + " at: " + access_token)
+    u = User(spotify_id = username.split(":")[2], oauth = access_token)
   else:
     u.access_token = access_token
+  app.logger.error(username + " at: " + access_token)
+  db.session.add(u)
   db.session.commit()
   app.logger.error(u.spotify_id + " updated successfully")
   return(r)
