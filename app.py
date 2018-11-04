@@ -76,7 +76,6 @@ def get_tunes():
     for user in User.query.all():
         try:
             track = _get_currently_playing(user.oauth)['item']
-            app.logger.error(track)
             track_info = ''
             for i in track['artists']:
                 app.logger.error(i)
@@ -94,6 +93,7 @@ def _get_currently_playing(access_token):
     response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
     if response:
         r = json.loads(response.content)
+
         return(r)
     elif response.status_code == 401:
         raise SpotifyAuthTokenError("expired access token")
@@ -134,6 +134,7 @@ def _renew_access_token(user):
     refresh_token = resp['refresh_token']
     user.access_token = user_tok
     user.refresh_tok = refresh_token;
+    db.session.add(user)
     db.session.commit()
     return (user)
 
