@@ -78,11 +78,9 @@ def get_tunes():
             track = _get_currently_playing(user.oauth)['item']
             track_info = ''
             for i in track['artists']:
-                app.logger.error(i)
                 track_info += "%s " %(i['name'])
                 track_info += ": %s" %(track['name'])
-                songs.append(track_info)
-            app.logger.error(songs)
+                songs.append("%s -> %s" %(user.spotify_id, track_info))
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             _get_currently_playing(user.access_token)
@@ -113,16 +111,15 @@ def _add_new_minion(access_token, refresh_token):
     username = r['id']
     u = User.query.filter_by(spotify_id=username).first()
     if (u is None):
-        app.logger.error(username + " at: " + access_token)
         u = User(spotify_id=username, oauth=access_token, refresh_tok=refresh_token)
     else:
         u.access_token = access_token
     db.session.add(u)
     db.session.commit()
-    app.logger.error(u.spotify_id + " updated successfully")
     return(r)
 
 def _renew_access_token(user):
+    app.logger.error("renewing the person")
     headers = _make_authorization_headers(__client_id__, __client_secret__)
     resp = json.loads(requests.post('https://accounts.spotify.com/api/token',
         data = {
@@ -131,9 +128,7 @@ def _renew_access_token(user):
           "code": user.refresh_tok },
         headers=headers).content)
     user_tok = resp['access_token']
-    refresh_token = resp['refresh_token']
     user.access_token = user_tok
-    user.refresh_tok = refresh_token;
     db.session.add(user)
     db.session.commit()
     return (user)
