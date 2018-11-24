@@ -1,20 +1,15 @@
-from flask import Flask, request, jsonify, redirect
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from urllib import parse
-import spotipy
-import spotipy.util as util
 import spotipy.oauth2 as spotipy_auth
 import os, base64, requests, six, json
-import six.moves.urllib.parse as urllibparse
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'whatsgood.sqlite')
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-__prefix__ = 'https://api.spotify.com/v1/'
 __client_id__ = os.environ["CLIENT_ID"]
 __client_secret__ = os.environ["CLIENT_SECRET"]
 __pub_host__='https://dj-slacker.herokuapp.com/'
