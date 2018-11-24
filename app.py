@@ -7,7 +7,8 @@ import os, base64, requests, six, json
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'whatsgood.sqlite')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 __client_id__ = os.environ["CLIENT_ID"]
