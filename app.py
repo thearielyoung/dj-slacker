@@ -7,8 +7,7 @@ import os, base64, requests, six, json
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'whatsgood.sqlite')
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 __client_id__ = os.environ["CLIENT_ID"]
@@ -55,6 +54,10 @@ def get_authorization_token():
     )
     return("Authorize here: " + spotify_auth.get_authorize_url())
 
+@app.route("/authdjrobot", methods=["POST"])
+def authorizeDjRobot():
+    return(request.get_json()["challenge"])
+    
 @app.route("/", methods=["GET"])
 def get_response_from_spotty():
     code = request.values['code']
