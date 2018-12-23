@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from urllib import parse
+from slackclient import SlackClient
 import spotipy.oauth2 as spotipy_auth
 import os, base64, requests, six, json
 
@@ -19,7 +20,10 @@ __spotify_auth__ = spotipy_auth.SpotifyOAuth(
         redirect_uri = __pub_host__,
         scope =  'user-read-currently-playing user-read-recently-played user-read-private'
     )
+__slack_api_token = os.environ["SLACK_API_TOKEN"]
 spotify_auth_endpoint = 'https://accounts.spotify.com/authorize/'
+__sc = SlackClient(__slack_api_token)
+
 
 def _make_authorization_headers():
     auth_header = base64.b64encode(six.text_type(__client_id__ + ':' + __client_secret__).encode('ascii'))
@@ -52,12 +56,35 @@ def get_authorization_token():
         redirect_uri = __pub_host__,
         scope =  'user-read-currently-playing user-read-recently-played user-read-private'
     )
-    return("Authorize here: " + spotify_auth.get_authorize_url())
+    return spotify_auth.get_authorize_url()
 
 @app.route("/authdjrobot", methods=["POST"])
 def authorizeDjRobot():
-    return(request.get_json()["challenge"])
-    
+    slack_request = request.get_json()
+    if "challenge" in slack_request:
+        return(slack_request["challenge"])
+    elif "event" in slack_request:
+        event = slack_request["event"]
+        event_text = event["text"]
+        peer_dj = event["user"]
+        channel = event["channel"]
+        if "new dj" in event_text:
+            __sc.api_call(
+            "chat.postMessage",
+            channel=peer_dj,
+            text="Authorize here: %s" % get_authorization_token()
+            )
+            return make_response("DJ Added", 200)
+        elif "shuffle" in event_text:
+            __sc.api_call(
+            "chat.postMessage",
+            channel=channel,
+            text=get_tunes()
+            )
+            return make_response("Songs fetched", 200)
+    else:
+        return make_response("invalid event", 500)
+
 @app.route("/", methods=["GET"])
 def get_response_from_spotty():
     code = request.values['code']
@@ -73,7 +100,6 @@ def get_response_from_spotty():
     if _add_new_minion(access_token, refresh_tok):
         return(jsonify("success!"))
 
-@app.route("/playmeamelody", methods=["GET", "POST"])
 def get_tunes():
     songs = []
     for user in User.query.all():
@@ -91,8 +117,8 @@ def get_tunes():
             _renew_access_token(user)
             _get_currently_playing(user.oauth)
     if not songs:
-        return jsonify({'text': "Its quiet...too quiet...get some music started g"})
-    return jsonify({'text': '\n'.join(songs)})
+        return "Its quiet...too quiet...get some music started g"
+    return '\n'.join(songs)
 
 def _get_currently_playing(access_token):
     headers = { 'Authorization': 'Bearer ' + access_token }
