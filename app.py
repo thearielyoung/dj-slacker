@@ -1,15 +1,18 @@
 from flask import Flask, request, jsonify
-from spotibot_client import Spotibot
+from flask_heroku import Heroku
+from spotibot_client import Spotibot, SpotifyAuthTokenError
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import os
 
-basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'whatsgood.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+hku = Heroku(app)
 ma = Marshmallow(app)
 db = SQLAlchemy(app)
+
+from models import User, UserSchema
 
 __spibot__ = Spotibot(os.environ["SLACK_API_TOKEN"])
 
@@ -85,24 +88,14 @@ def get_tunes():
 
 
 def _renew_access_token(user):
-    t = __spibot__.refresh_access_token(refresh_token=user.refresh_tok)
+    t = __spibot__.get_new_access_token(refresh_token=user.refresh_tok)
     user_tok = t['access_token']
     ref_tok = t['refresh_token']
-    user.oauth = user_tokUser
+    user.oauth = user_tok
     user.refresh_tok = ref_tok
     db.session.add(user)
     db.session.commit()
     return (user)
-
-class User(db.Model):
-    id = db.Column(db.Integer, unique=True, primary_key=True)
-    spotify_id = db.Column(db.String(64), unique=True)
-    oauth = db.Column(db.String(256), unique=True)
-    refresh_tok = db.Column(db.String(256), unique=True)
-
-class UserSchema(ma.Schema):
-    class Meta:
-        fields = ('spotify_id', 'id')
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)

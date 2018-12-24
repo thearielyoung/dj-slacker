@@ -20,3 +20,4 @@ Werkzeug==0.14.1
 spotipy
 psycopg2
 slackclient
+flask-heroku
