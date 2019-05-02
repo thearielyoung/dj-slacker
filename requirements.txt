@@ -4,6 +4,7 @@ chardet==3.0.4
 Click==7.0
 Flask==1.0.2
 flask-marshmallow==0.9.0
+flask-cors
 Flask-SQLAlchemy==2.3.2
 gunicorn==19.9.0
 idna==2.7
