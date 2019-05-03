@@ -5,6 +5,7 @@ from spotibot_client import Spotibot, SpotifyAuthTokenError
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import os
+import random
 
 
 app = Flask(__name__)
@@ -72,8 +73,15 @@ def handle_event(event):
     else:
         return make_response("invalid event", 500)
 
+def get_random_fake_song:
+    fileKey = random.randint(0,3)
+    with open('sampleResponses/{}.json'.format(fileKey), 'r') as file:
+        return file.read()
+
+
 def get_tunes():
     songs = []
+    __spibot__.
     for user in User.query.all():
         try:
             track = __spibot__.get_currently_playing(user.oauth)
@@ -96,10 +104,11 @@ def get_tunes_detailed():
     songs = []
     for user in User.query.all():
         try:
-            track = __spibot__.get_currently_playing(user.oauth)
+            track = get_random_fake_song() #__spibot__.get_currently_playing(user.oauth)
             if track:
                 songs.append({"user":user.spotify_id,"track":track})
         except SpotifyAuthTokenError:
+            songs.append({"user":user.spotify_id,"track":get_random_fake_song())})
             _renew_access_token(user)
             __spibot__.get_currently_playing(user.oauth)
     if not songs:
