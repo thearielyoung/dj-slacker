@@ -45,12 +45,20 @@ def get_response_from_spotty():
     access, refresh =__spibot__.parse_spotify_response(code)
     return(__create_user__(access, refresh))
 
+@app.route("/authorizeme", methods=["POST"])
+def get_authorization_token():
+  # if request.method == 'GET':
+  if request.method == 'POST':
+      app.logger.error(request.form['payload'] + "heyyoo")
+      return(request.form['payload'])
+  else:
+      return("Error")
+
 def __create_user__(access_token, refresh_token):
     app.logger.error("access: %s refresh: %s", access_token, refresh_token)
     if access_token and refresh_token:
         r = __spibot__.get_user_info(access_token)
         if r:
-            app.logger.error("r: %s", r)
             username = r['id']
             name = r['display_name']
             u = User.query.filter_by(spotify_id=username).first()
