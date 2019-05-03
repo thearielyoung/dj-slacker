@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import os
 import random
+import json
 
 
 app = Flask(__name__)
@@ -76,7 +77,7 @@ def handle_event(event):
 def get_random_fake_song():
     fileKey = random.randint(0,3)
     with open('sampleResponses/{}.json'.format(fileKey), 'r') as file:
-        return file.read()
+        return json.loads(file.read())
 
 
 def get_tunes():
@@ -103,18 +104,15 @@ def get_tunes_detailed():
     songs = []
     for user in User.query.all():
         try:
-            track = get_random_fake_song() #__spibot__.get_currently_playing(user.oauth)
+            track = __spibot__.get_currently_playing(user.oauth)
             if track:
                 songs.append({"user":user.spotify_id,"track":track})
         except SpotifyAuthTokenError:
-            songs.append({"user":user.spotify_id,"track":track})
             _renew_access_token(user)
             __spibot__.get_currently_playing(user.oauth)
     if not songs:
         return { "error": "Its quiet...too quiet...get some music started g"}
     return songs
-
-
 
 def _renew_access_token(user):
     t = __spibot__.get_new_access_token(refresh_token=user.refresh_tok)
