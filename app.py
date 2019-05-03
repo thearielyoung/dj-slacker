@@ -98,7 +98,7 @@ def get_tunes_detailed():
         try:
             track = __spibot__.get_currently_playing(user.oauth)
             if track:
-                songs.append({"user":user,"track":track})
+                songs.append({"user":user.spotify_id,"track":track})
         except SpotifyAuthTokenError:
             _renew_access_token(user)
             __spibot__.get_currently_playing(user.oauth)
