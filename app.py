@@ -24,6 +24,10 @@ def get_user():
     result = users_schema.dump(all_users)
     return jsonify(result.data)
 
+@app.route("/nowplaying", methods=["GET"])
+def get_nowplaying():
+    return jsonify(get_tunes_detailed())
+
 @app.route("/authdjrobot", methods=["POST"])
 def authorizeDjRobot():
     slack_request = request.get_json()
@@ -87,6 +91,21 @@ def get_tunes():
     if not songs:
         return "Its quiet...too quiet...get some music started g"
     return '\n'.join(songs)
+
+def get_tunes_detailed():
+    songs = []
+    for user in User.query.all():
+        try:
+            track = __spibot__.get_currently_playing(user.oauth)
+            if track:
+                songs.append({"user":user,"track":track})
+        except SpotifyAuthTokenError:
+            _renew_access_token(user)
+            __spibot__.get_currently_playing(user.oauth)
+    if not songs:
+        return { "error": "Its quiet...too quiet...get some music started g"}
+    return songs
+
 
 
 def _renew_access_token(user):
