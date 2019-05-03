@@ -45,14 +45,12 @@ def get_response_from_spotty():
     access, refresh =__spibot__.parse_spotify_response(code)
     return(__create_user__(access, refresh))
 
-@app.route("/authorizeme", methods=["POST"])
+@app.route("/authorizeme", methods=["GET", "POST"])
 def get_authorization_token():
-  # if request.method == 'GET':
-  if request.method == 'POST':
-      app.logger.error(request.form['payload'] + "heyyoo")
-      return(request.form['payload'])
+  if request.method == 'GET':
+      return(jsonify("Authorize here: %s ", __spibot__.get_authorize_url()))
   else:
-      return("Error")
+      return(jsonify("Error"))
 
 def __create_user__(access_token, refresh_token):
     app.logger.error("access: %s refresh: %s", access_token, refresh_token)
@@ -63,7 +61,7 @@ def __create_user__(access_token, refresh_token):
             name = r['display_name']
             u = User.query.filter_by(spotify_id=username).first()
             if (u is None):
-                u = User(spotify_id=username, oauth=access_token, refresh_tok=refresh_token)
+                u = User(username, access_token, refresh_token)
             else:
                 u.access_token = access_token
             db.session.add(u)
@@ -80,7 +78,7 @@ def handle_event(event):
     elif "shuffle" in event_text:
         return __spibot__.send_currently_playing_list(channel, get_tunes())
     else:
-        return make_response("invalid event", 500)
+        return requests.make_response("invalid event", 500)
 
 def get_random_fake_song():
     fileKey = random.randint(0,3)
@@ -138,3 +136,4 @@ users_schema = UserSchema(many=True)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port="8888")
+    app.config['DEBUG'] = True
