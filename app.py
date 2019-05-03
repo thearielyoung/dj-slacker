@@ -73,7 +73,7 @@ def handle_event(event):
     else:
         return make_response("invalid event", 500)
 
-def get_random_fake_song:
+def get_random_fake_song():
     fileKey = random.randint(0,3)
     with open('sampleResponses/{}.json'.format(fileKey), 'r') as file:
         return file.read()
@@ -81,7 +81,6 @@ def get_random_fake_song:
 
 def get_tunes():
     songs = []
-    __spibot__.
     for user in User.query.all():
         try:
             track = __spibot__.get_currently_playing(user.oauth)
@@ -108,7 +107,7 @@ def get_tunes_detailed():
             if track:
                 songs.append({"user":user.spotify_id,"track":track})
         except SpotifyAuthTokenError:
-            songs.append({"user":user.spotify_id,"track":get_random_fake_song())})
+            songs.append({"user":user.spotify_id,"track":track})
             _renew_access_token(user)
             __spibot__.get_currently_playing(user.oauth)
     if not songs:
