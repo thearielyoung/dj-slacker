@@ -1,7 +1,7 @@
 from app import db, ma
 
 class User(db.Model):
-  __tablename__ = 'user'
+  __tablename__ = 'users'
 
   id = db.Column(db.Integer, unique=True, primary_key=True)
   spotify_id = db.Column(db.String(64), unique=True)
