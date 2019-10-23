@@ -12,6 +12,7 @@ import json
 app = Flask(__name__)
 CORS(app)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 hku = Heroku(app)
 ma = Marshmallow(app)
 db = SQLAlchemy(app)
